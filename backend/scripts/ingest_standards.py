@@ -8,7 +8,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from app.services.retrieval import embed_text
 from app.db.client import supabase
 
-DATA_FILE = "/Users/rishii/SIH-2026/data/indian_standards_master_catalog.json"
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+DATA_FILE = os.environ.get("STANDARDS_DATA_FILE", os.path.join(BASE_DIR, "data", "indian_standards_master_catalog.json"))
 
 def extract_year(text: str) -> str | None:
     match = re.search(r'\b(19\d{2}|20\d{2})\b', text)
