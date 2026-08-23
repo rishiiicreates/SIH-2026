@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.env
+.venv
+env/
+venv/
+
+# Antigravity / IDE
+.agents/
+.gemini/
+
+# Archives & Temp
+*.zip
+.DS_Store
+Thumbs.db
