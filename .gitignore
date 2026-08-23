@@ -1,18 +1,23 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.env
-.env
-.venv
-env/
+*.egg-info/
+.venv/
 venv/
+.env
 
-# Antigravity / IDE
-.agents/
-.gemini/
+# Node
+node_modules/
+.next/
+out/
+.env.local
 
-# Archives & Temp
-*.zip
+# OS
 .DS_Store
 Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

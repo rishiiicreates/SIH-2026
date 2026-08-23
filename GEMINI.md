@@ -1,42 +1,38 @@
-# Project Context — Read This First
+# GEMINI.md — Hard Rules for AI Assistants
 
-This is an SIH 2026 hackathon project (PS 26108). Before suggesting any
-architecture, feature, or code, read these files in the project root:
+Read these files in this order before touching code:
+`PROBLEM_STATEMENT.md` → `ARCHITECTURE.md` → `STACK.md` → `DATA_SOURCES.md` → `ROADMAP.md`
 
-1. `PROBLEM_STATEMENT.md` — what we are actually being judged on
-2. `ARCHITECTURE.md` — the pipeline design and why it's scoped this way
-3. `STACK.md` — exact tech choices, including what NOT to suggest
-4. `DATA_SOURCES.md` — where data comes from and its real constraints
-5. `ROADMAP.md` — current build phase and the ordered backlog
-6. `SCRAPING.md` — how BIS standards data and GeM tender samples are
-   acquired, and the rules for both scrapers
+## Hard Rules
 
-## Hard rules for suggestions
+### Architecture Constraints
+- **No Neo4j / graph DB** — a Postgres join table (`standard_references`) handles reference lookups
+- **No LangChain / LlamaIndex** — the retriever is hand-written raw Python
+- **No ChromaDB / Qdrant / Milvus** — pgvector in Supabase
 
-- Do NOT suggest Neo4j, graph databases, or any new database engine.
-  Reference lookups are solved with a join table in the existing
-  Postgres/Supabase instance. This has already been evaluated and
-  rejected — see ARCHITECTURE.md for the reasoning.
-- Do NOT suggest LangChain, LlamaIndex, or any RAG framework for the
-  retriever. The retriever is hand-written raw Python. See STACK.md.
-- Do NOT suggest a Chrome extension, GeM portal integration, or any
-  new frontend surface unless explicitly asked. These are backlog
-  item #7 (lowest priority) — see ROADMAP.md.
-- Do NOT assume a bulk BIS standards API or dataset exists. It does
-  not. See DATA_SOURCES.md before suggesting any data-fetching code.
-- Match whichever phase (V1 or a specific backlog item) is currently
-  being worked on — check ROADMAP.md before proposing scope.
-- Never silently catch-and-ignore an exception to "fall back" between
-  two code paths (e.g. `except Exception: pass`). Catch only the
-  specific known failure being handled; let anything else raise or
-  log loudly. A silent wrong answer during judging is worse than a
-  visible crash during development. See STACK.md.
-- Do NOT default to a public/free inference API (e.g. Hugging Face's
-  hosted inference endpoint) for embeddings without it being
-  explicitly confirmed first — see STACK.md's embedding model section.
-- Do NOT build one generic scraper for both BIS standards and GeM
-  tenders — they're different targets with different shapes and
-  purposes. See SCRAPING.md.
+### Feature Boundaries
+- **No Chrome extension / GeM integration** — backlog item #7, don't touch it
+- **No multilingual support** — backlog item #5, deferred
+- **No tender PDF upload/parsing** — backlog item #2
 
-The team is 6 people, all working from this same context. Consistency
-across suggestions matters more than any single clever idea.
+### Data Rules
+- **No assuming a bulk BIS API/dataset exists** — it doesn't; data entry is manual
+- **No fabricating IS numbers** — every `IS ####:YYYY` must be verified against bis.gov.in
+
+### Technical Rules
+- **Reference expansion and metadata are DETERMINISTIC LOOKUPS, not LLM reasoning** — 
+  do not route stages 2/3 through Gemini or any model. Only stage 1 (retrieval) touches AI.
+- **No silent `except Exception: pass`** — catch specific known failures, let everything else raise
+- **No public/free inference API for embeddings** — Gemini API is the confirmed provider
+  (`gemini-embedding-001`, `google-genai` SDK, single `GEMINI_API_KEY` env var)
+
+### Embedding Provider
+- **Confirmed:** `gemini-embedding-001` via `google-genai` SDK
+- **Output dimension:** 768 (via `output_dimensionality` parameter; native is 3072)
+- **Superseded:** ~~BAAI/bge-m3 via Hugging Face hosted inference~~ — do not use
+
+### Code Quality
+- Explicit error handling with specific exception types
+- No unused imports or dead code
+- Functions under 50 lines, files under 800 lines
+- Type hints on all function signatures

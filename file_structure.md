@@ -1,71 +1,59 @@
-# V1 File Structure — Raw Python (No LangChain/Framework)
+# File Structure — PS 26108
 
 ```
-sih-standards-engine/
+SIH-2026/
+├── README.md
+├── ARCHITECTURE.md
+├── STACK.md
+├── DATA_SOURCES.md
+├── ROADMAP.md
+├── SCRAPING.md
+├── GEMINI.md
+├── data/
+│   ├── indian_standards_master_catalog.json  ← 11 verified standards (seed data)
+│   ├── bis_mandatory_qco_scheme1.json       ← 752 QCO Scheme-I records
+│   ├── bis_mandatory_crs_scheme2.json       ← 30 CRS Scheme-II records
+│   ├── bis_normative_graph_triples.json     ← 53 reference triples
+│   └── sample_procurement_tenders_eval.json ← 4 benchmark tenders
 ├── backend/
 │   ├── app/
-│   │   ├── main.py
-│   │   # FastAPI entrypoint — just starts the app, includes routers
-│   │
-│   │   ├── config.py
-│   │   # env vars, embedding model name, DB connection string
-│   │
+│   │   ├── __init__.py
+│   │   ├── main.py              ← FastAPI app with CORS
+│   │   ├── config.py            ← Settings (GEMINI_API_KEY, SUPABASE_URL/KEY)
 │   │   ├── routers/
-│   │   │   └── recommend.py
-│   │   │   # POST /recommend — raw Python orchestration: calls retrieval → reference_expand → metadata in sequence, no LangGraph/agent needed since flow is linear
-│   │
+│   │   │   ├── __init__.py
+│   │   │   └── recommend.py     ← POST /api/v1/recommend
 │   │   ├── services/
-│   │   │   ├── retrieval.py
-│   │   │   # CUSTOM RETRIEVER — calls embedding API directly, does cosine similarity / pgvector query yourself, no LangChain retriever object
-│   │   │
-│   │   │   ├── reference_expand.py
-│   │   │   # plain SQL lookup: given a standard_id, fetch its normative references — not AI, just a join query
-│   │   │
-│   │   │   └── metadata.py
-│   │   │   # plain lookup: version, amendment, QCO/certification flag — static fields, no reasoning
-│   │
+│   │   │   ├── __init__.py
+│   │   │   ├── retrieval.py     ← embed_text() + search() via pgvector
+│   │   │   ├── reference_expand.py ← deterministic join query
+│   │   │   └── metadata.py      ← deterministic single-row lookup
 │   │   ├── models/
-│   │   │   └── schemas.py
-│   │   # Pydantic request/response shapes — kept even without a framework, since FastAPI needs these regardless
-│   │
+│   │   │   ├── __init__.py
+│   │   │   └── schemas.py       ← Pydantic request/response models
 │   │   └── db/
-│   │       └── client.py
-│   │       # DB connection init (Supabase client or raw psycopg2 — your choice, doesn't affect structure)
-│   │
+│   │       ├── __init__.py
+│   │       ├── client.py        ← Supabase client singleton
+│   │       └── schema.sql       ← SQL migration (tables + RPC)
 │   ├── scripts/
-│   │   └── ingest_standards.py
-│   │   # one-time script: reads standards_seed.csv, generates embeddings yourself, writes to DB — run manually, not part of live app
-│   │
-│   ├── data/
-│   │   └── standards_seed.csv
-│   │   # your ~50-100 hand-curated standards: title, scope, references, version, QCO flag
-│   │
+│   │   └── ingest_standards.py  ← Reads catalog JSON, embeds, upserts
 │   ├── requirements.txt
-│   │   # minimal: fastapi, uvicorn, psycopg2 or supabase-py, an embeddings SDK (e.g. openai) — no langchain
-│   │
-│   └── .env.example
-│
-├── frontend/
-│   ├── app/
-│   │   ├── page.tsx
-│   │   # search box + results — single view, no nav for V1
-│   │
-│   │   └── layout.tsx
-│   │
-│   ├── components/
-│   │   ├── SearchBar.tsx
-│   │   ├── ResultCard.tsx
-│   │   │   # IS number, title, version badge, QCO badge
-│   │   └── ReferenceList.tsx
-│   │       # flat expandable list of allied standards, not a graph viz
-│   │
-│   ├── lib/
-│   │   └── api.ts
-│   │   # calls your FastAPI /recommend endpoint
-│   │
-│   └── package.json
-│
-└── README.md
+│   ├── .env.example
+│   └── README.md
+└── frontend/
+    ├── app/
+    │   ├── page.tsx             ← Search + results (only view)
+    │   ├── layout.tsx           ← Root layout
+    │   └── globals.css
+    ├── components/
+    │   ├── SearchBar.tsx
+    │   ├── ResultCard.tsx       ← IS number, title, version, QCO badge
+    │   └── ReferenceList.tsx    ← Flat expandable reference list
+    ├── lib/
+    │   └── api.ts               ← POST /api/v1/recommend
+    ├── package.json
+    ├── tsconfig.json
+    ├── tailwind.config.ts
+    ├── next.config.ts
+    └── postcss.config.mjs
 ```
-
-**Where this differs from a framework-based setup:** only `services/retrieval.py` and `scripts/ingest_standards.py` change internally — you write the embedding calls, similarity search, and any orchestration loops yourself instead of instantiating LangChain objects. Every other file's job stays identical. `routers/recommend.py` is plain sequential function calls (`result = retrieval.search(query)` → `refs = reference_expand.get(result.id)` → `meta = metadata.get(result.id)`) — no orchestration framework needed since there's no branching or state to manage yet.

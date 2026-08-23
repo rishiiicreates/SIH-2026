@@ -1,27 +1,17 @@
-"""
-Stage 3: Metadata overlay.
+from app.db.client import supabase
 
-PLAIN LOOKUP — version, amendment date, and mandatory QCO/certification
-flag. Static stored fields, no reasoning involved.
-"""
-
-# from app.db.client import get_db
-
-
-def get_metadata(standard_id: str) -> dict:
-    """
-    Return version/amendment/QCO info for `standard_id`.
-
-    Returns a dict like:
-        {
-            "latest_version": "IS 694:2010",
-            "amendment_date": "2018-03-01",  # or None
-            "is_mandatory_qco": True,
-        }
-
-    V1: single-row lookup against the standards table (static fields
-    from standards_seed.csv). Backlog item #4 (auto-tracking) later
-    replaces the static fields with a periodically-refreshed source —
-    this function's signature shouldn't need to change when that lands.
-    """
-    raise NotImplementedError
+def get_metadata(standard_id: str) -> dict | None:
+    if supabase is None:
+        raise RuntimeError("Supabase client is not initialized.")
+    try:
+        response = supabase.table("standards").select(
+            "latest_version, amendment_date, is_mandatory_qco"
+        ).eq("standard_id", standard_id).execute()
+        
+        # If no results, return None
+        if not response.data:
+            return None
+            
+        return response.data[0]
+    except Exception as e:
+        raise RuntimeError(f"Failed to get metadata for {standard_id}: {e}")

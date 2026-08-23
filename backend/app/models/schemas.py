@@ -1,31 +1,27 @@
-"""Request/response shapes for the /recommend endpoint."""
-
-from pydantic import BaseModel
-
+from pydantic import BaseModel, Field
 
 class RecommendRequest(BaseModel):
-    query: str  # raw product/spec description, plain text for V1
+    query: str = Field(..., min_length=1, description="Product description or procurement spec")
+    top_k: int = Field(default=5, ge=1, le=20)
 
+class ReferenceItem(BaseModel):
+    referenced_id: str
+    title: str | None = None
+    relationship_type: str | None = None
 
-class ReferencedStandard(BaseModel):
-    standard_id: str      # e.g. "IS 694"
-    title: str
-
-
-class StandardMetadata(BaseModel):
-    latest_version: str        # e.g. "IS 694:2010"
+class MetadataInfo(BaseModel):
+    latest_version: str | None = None
     amendment_date: str | None = None
-    is_mandatory_qco: bool
+    is_mandatory_qco: bool = False
 
-
-class RecommendedStandard(BaseModel):
+class StandardRecommendation(BaseModel):
     standard_id: str
     title: str
-    similarity_score: float           # from retrieval.py, stage 1
-    references: list[ReferencedStandard]   # from reference_expand.py, stage 2
-    metadata: StandardMetadata             # from metadata.py, stage 3
-
+    similarity: float
+    references: list[ReferenceItem] = []
+    metadata: MetadataInfo | None = None
 
 class RecommendResponse(BaseModel):
     query: str
-    results: list[RecommendedStandard]
+    recommendations: list[StandardRecommendation]
+    total_results: int
