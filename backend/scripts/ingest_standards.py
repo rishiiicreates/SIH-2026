@@ -6,7 +6,7 @@ import re
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.services.retrieval import embed_text
-from app.db.client import supabase
+from app.db.client import get_supabase
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
 DATA_FILE = os.environ.get("STANDARDS_DATA_FILE", os.path.join(BASE_DIR, "data", "indian_standards_master_catalog.json"))
@@ -89,10 +89,9 @@ def main():
             "is_mandatory_qco": is_mandatory_qco
         }
 
+        client = get_supabase()
         try:
-            if supabase is None:
-                raise RuntimeError("Supabase client is not initialized.")
-            supabase.table("standards").upsert(standard_record).execute()
+            client.table("standards").upsert(standard_record).execute()
         except Exception as e:
             print(f"Failed to upsert standard {standard_id}: {e}")
             continue
@@ -123,7 +122,7 @@ def main():
             
         if references_to_insert:
             try:
-                supabase.table("standard_references").upsert(references_to_insert).execute()
+                client.table("standard_references").upsert(references_to_insert).execute()
             except Exception as e:
                 print(f"Failed to upsert references for {standard_id}: {e}")
 

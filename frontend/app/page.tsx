@@ -20,10 +20,16 @@ export default function Home() {
       setData(response);
     } catch (err: any) {
       console.error(err);
+      setData(null);
       setError(err?.message || 'Failed to fetch recommendations. Please try again later.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleClear = () => {
+    setData(null);
+    setError(null);
   };
 
   return (
@@ -43,16 +49,24 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto w-full px-4 py-8 flex-1 flex flex-col">
-        <div className="mb-12 -mt-16 relative z-10">
+        <div className="mb-8 -mt-16 relative z-10">
           <SearchBar onSearch={handleSearch} isLoading={isLoading} />
         </div>
 
         <div className="flex-1">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8 rounded shadow-sm">
-              <div className="flex items-center">
-                <AlertCircle className="text-red-500 mr-3" size={24} />
-                <p className="text-red-700 font-medium">{error}</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <AlertCircle className="text-red-500 mr-3 shrink-0" size={24} />
+                  <p className="text-red-700 font-medium text-sm md:text-base">{error}</p>
+                </div>
+                <button
+                  onClick={() => setError(null)}
+                  className="text-sm font-semibold text-red-600 hover:text-red-800 underline ml-4 cursor-pointer"
+                >
+                  Dismiss
+                </button>
               </div>
             </div>
           )}
@@ -84,9 +98,17 @@ export default function Home() {
 
           {data && data.recommendations.length > 0 && !isLoading && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-                Found {data.total_results} Standards for "{data.query}"
-              </h2>
+              <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Found {data.total_results} Standards for "{data.query}"
+                </h2>
+                <button
+                  onClick={handleClear}
+                  className="text-xs font-semibold text-gray-500 hover:text-bis-blue px-3 py-1 bg-gray-100 hover:bg-blue-50 border border-gray-200 rounded-md transition-colors cursor-pointer"
+                >
+                  Clear Results
+                </button>
+              </div>
               {data.recommendations.map((rec) => (
                 <ResultCard key={rec.standard_id} recommendation={rec} />
               ))}
