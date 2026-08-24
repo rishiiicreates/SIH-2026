@@ -18,9 +18,9 @@ export default function Home() {
     try {
       const response = await fetchRecommendations(query);
       setData(response);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError('Failed to fetch recommendations. Please try again later.');
+      setError(err?.message || 'Failed to fetch recommendations. Please try again later.');
     } finally {
       setIsLoading(false);
     }

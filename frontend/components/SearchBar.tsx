@@ -18,31 +18,60 @@ export default function SearchBar({ onSearch, isLoading }: SearchBarProps) {
     }
   };
 
+  const handleChipClick = (sampleQuery: string) => {
+    setQuery(sampleQuery);
+    onSearch(sampleQuery);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-4xl mx-auto">
-      <div className="relative flex items-center">
-        <input
-          name="query"
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Describe your procurement needs... e.g., '5 HP submersible agricultural pump'"
-          className="w-full pl-5 pr-32 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-bis-blue focus:ring-1 focus:ring-bis-blue outline-none transition-all shadow-sm bg-white"
-          disabled={isLoading}
-        />
-        <button
-          type="submit"
-          disabled={isLoading || !query.trim()}
-          className="absolute right-2 px-6 py-2.5 bg-bis-blue text-white rounded-lg font-medium hover:bg-blue-900 disabled:opacity-70 disabled:cursor-not-allowed transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
-        >
-          {isLoading ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Search size={20} />
-          )}
-          <span>Search</span>
-        </button>
+    <div className="w-full max-w-4xl mx-auto space-y-3">
+      <form onSubmit={handleSubmit} className="relative w-full">
+        <div className="relative flex items-center shadow-lg rounded-xl overflow-hidden bg-white border-2 border-gray-200 focus-within:border-bis-blue focus-within:ring-2 focus-within:ring-bis-blue/20 transition-all">
+          <input
+            name="query"
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Describe your procurement needs... e.g., '5 HP submersible agricultural pump'"
+            className="w-full pl-5 pr-36 py-4 text-base md:text-lg outline-none text-gray-800 placeholder-gray-400 bg-transparent"
+            disabled={isLoading}
+            autoFocus
+          />
+          <button
+            type="submit"
+            disabled={isLoading || !query.trim()}
+            className="absolute right-2 z-30 px-6 py-2.5 bg-bis-blue text-white rounded-lg font-semibold hover:bg-blue-900 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-bis-blue transition-all flex items-center gap-2 cursor-pointer shadow"
+          >
+            {isLoading ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Search size={18} />
+            )}
+            <span>{isLoading ? 'Searching...' : 'Search'}</span>
+          </button>
+        </div>
+      </form>
+
+      {/* Quick Example Chips */}
+      <div className="flex flex-wrap items-center gap-2 pt-1 text-sm text-gray-500">
+        <span className="font-medium text-gray-600">Try searching:</span>
+        {[
+          '5 HP submersible agricultural pump',
+          'PVC insulated copper cable for building wiring',
+          'Fe 500D TMT reinforcement steel bars',
+          '36W commercial LED panel luminaire',
+        ].map((example) => (
+          <button
+            key={example}
+            type="button"
+            onClick={() => handleChipClick(example)}
+            disabled={isLoading}
+            className="px-3 py-1 bg-white hover:bg-blue-50 text-bis-blue hover:text-blue-900 border border-gray-200 hover:border-bis-blue/40 rounded-full text-xs font-medium transition-colors shadow-xs disabled:opacity-50"
+          >
+            {example}
+          </button>
+        ))}
       </div>
-    </form>
+    </div>
   );
 }

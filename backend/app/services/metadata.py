@@ -1,10 +1,11 @@
-from app.db.client import supabase
+from app.db.client import get_supabase
 
 def get_metadata(standard_id: str) -> dict | None:
-    if supabase is None:
+    client = get_supabase()
+    if client is None:
         raise RuntimeError("Supabase client is not initialized.")
     try:
-        response = supabase.table("standards").select(
+        response = client.table("standards").select(
             "latest_version, amendment_date, is_mandatory_qco"
         ).eq("standard_id", standard_id).execute()
         
@@ -15,3 +16,4 @@ def get_metadata(standard_id: str) -> dict | None:
         return response.data[0]
     except Exception as e:
         raise RuntimeError(f"Failed to get metadata for {standard_id}: {e}")
+
