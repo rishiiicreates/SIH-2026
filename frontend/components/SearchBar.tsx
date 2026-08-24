@@ -22,17 +22,18 @@ export default function SearchBar({ onSearch, isLoading }: SearchBarProps) {
     <form onSubmit={handleSubmit} className="w-full max-w-4xl mx-auto">
       <div className="relative flex items-center">
         <input
+          name="query"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Describe your procurement needs... e.g., '5 HP submersible agricultural pump'"
-          className="w-full pl-5 pr-32 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-bis-blue focus:ring-1 focus:ring-bis-blue outline-none transition-all shadow-sm"
+          className="w-full pl-5 pr-32 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-bis-blue focus:ring-1 focus:ring-bis-blue outline-none transition-all shadow-sm bg-white"
           disabled={isLoading}
         />
         <button
           type="submit"
           disabled={isLoading || !query.trim()}
-          className="absolute right-2 px-6 py-2.5 bg-bis-blue text-white rounded-lg font-medium hover:bg-blue-900 disabled:opacity-70 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+          className="absolute right-2 px-6 py-2.5 bg-bis-blue text-white rounded-lg font-medium hover:bg-blue-900 disabled:opacity-70 disabled:cursor-not-allowed transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
         >
           {isLoading ? (
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
