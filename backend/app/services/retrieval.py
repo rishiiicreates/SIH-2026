@@ -1,11 +1,12 @@
 import logging
 import math
+from functools import lru_cache
 from google import genai
 from google.genai.errors import APIError
 from postgrest.exceptions import APIError as PostgrestAPIError
 
 from app.config import settings
-from app.db.client import supabase, get_supabase
+from app.db.client import get_supabase
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,18 @@ def _get_genai_client():
         _genai_client = genai.Client(api_key=settings.GEMINI_API_KEY)
     return _genai_client
 
+# LRU cache: same query text → same embedding vector (deterministic model)
+_embedding_cache: dict[str, list[float]] = {}
+MAX_CACHE_SIZE = 200
+
 def embed_text(text: str, max_retries: int = 3) -> list[float]:
+    """Embed text with Gemini, using an in-memory cache for repeated queries."""
+    # Check cache first
+    cache_key = text.strip().lower()
+    if cache_key in _embedding_cache:
+        logger.debug("Embedding cache hit for: %s", text[:50])
+        return _embedding_cache[cache_key]
+
     last_err = None
     for attempt in range(max_retries):
         try:
@@ -30,16 +42,23 @@ def embed_text(text: str, max_retries: int = 3) -> list[float]:
                 contents=text,
                 config={"output_dimensionality": settings.EMBEDDING_DIMENSION},
             )
-            return response.embeddings[0].values
+            embedding = response.embeddings[0].values
+
+            # Store in cache (evict oldest if full)
+            if len(_embedding_cache) >= MAX_CACHE_SIZE:
+                oldest_key = next(iter(_embedding_cache))
+                del _embedding_cache[oldest_key]
+            _embedding_cache[cache_key] = embedding
+
+            return embedding
         except Exception as e:
             last_err = e
             logger.warning("Gemini embedding attempt %d failed (%s). Retrying...", attempt + 1, e)
             global _genai_client
             _genai_client = None  # Reset client on error to reconnect
-    
+
     logger.error("All %d Gemini embedding attempts failed: %s", max_retries, last_err)
     raise RuntimeError(f"Failed to generate embedding after {max_retries} attempts: {last_err}") from last_err
-
 
 
 def _cosine_similarity(v1: list[float], v2: list[float]) -> float:
@@ -67,14 +86,13 @@ def search(query: str, top_k: int = settings.TOP_K_DEFAULT) -> list[dict]:
             return response.data
     except Exception as rpc_err:
         logger.warning(
-            "Supabase pgvector RPC 'match_standards' call failed or was unreachable (%s). Using Python in-memory cosine fallback.",
+            "Supabase pgvector RPC 'match_standards' failed (%s). Using in-memory cosine fallback.",
             rpc_err
         )
 
-    # Fallback path: in-memory cosine similarity over standards table
+    # Fallback path: in-memory cosine similarity
     try:
-        fresh_client = get_supabase()
-        all_stds = fresh_client.table("standards").select("standard_id, title, embedding").execute()
+        all_stds = client.table("standards").select("standard_id, title, embedding").execute()
         results = []
         for row in all_stds.data:
             if not row.get("embedding"):
@@ -85,7 +103,7 @@ def search(query: str, top_k: int = settings.TOP_K_DEFAULT) -> list[dict]:
                 "title": row["title"],
                 "similarity": sim
             })
-        
+
         results.sort(key=lambda x: x["similarity"], reverse=True)
         return results[:top_k]
     except Exception as fallback_err:
@@ -93,3 +111,11 @@ def search(query: str, top_k: int = settings.TOP_K_DEFAULT) -> list[dict]:
         raise RuntimeError(f"Database search failed: {fallback_err}") from fallback_err
 
 
+def warmup():
+    """Pre-warm Gemini client and Supabase connection at startup."""
+    try:
+        logger.info("Warming up Gemini embedding client...")
+        embed_text("warmup query")
+        logger.info("Warmup complete — Gemini client ready")
+    except Exception as e:
+        logger.warning("Warmup failed (non-fatal): %s", e)

@@ -1,8 +1,19 @@
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import recommend
 
-app = FastAPI(title="BIS Standards Recommendation Engine")
+logger = logging.getLogger(__name__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Warm up Gemini + Supabase connections at startup."""
+    from app.services.retrieval import warmup
+    warmup()
+    yield
+
+app = FastAPI(title="BIS Standards Recommendation Engine", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

@@ -1,9 +1,10 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import RecommendRequest, RecommendResponse, StandardRecommendation, ReferenceItem, MetadataInfo
 from app.services.retrieval import search
-from app.services.reference_expand import get_references
-from app.services.metadata import get_metadata
+from app.services.reference_expand import get_references_batch
+from app.services.metadata import get_metadata_batch
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -15,40 +16,51 @@ def recommend_standards(request: RecommendRequest):
     except RuntimeError as e:
         logger.error("Search failure for query '%s': %s", request.query, e)
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+    if not search_results:
+        return RecommendResponse(
+            query=request.query,
+            recommendations=[],
+            total_results=0
+        )
+
+    # Collect all standard IDs from search results
+    standard_ids = [res["standard_id"] for res in search_results]
+
+    # Batch fetch: 2 DB queries instead of 10 sequential ones
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        refs_future = executor.submit(get_references_batch, standard_ids)
+        meta_future = executor.submit(get_metadata_batch, standard_ids)
+        all_refs = refs_future.result()
+        all_meta = meta_future.result()
+
+    # Assemble response using pre-fetched data
     recommendations = []
     for res in search_results:
         standard_id = res["standard_id"]
         title = res["title"]
         similarity = res.get("similarity", 0.0)
-        
-        try:
-            refs = get_references(standard_id)
-            reference_items = [
-                ReferenceItem(
-                    referenced_id=r["referenced_id"],
-                    title=r.get("referenced_title"),
-                    relationship_type=r.get("relationship_type")
-                ) for r in refs
-            ]
-        except RuntimeError as e:
-            logger.warning("Could not expand references for standard %s: %s", standard_id, e)
-            reference_items = []
 
-        try:
-            meta = get_metadata(standard_id)
-            if meta:
-                metadata_info = MetadataInfo(
-                    latest_version=meta.get("latest_version"),
-                    amendment_date=meta.get("amendment_date"),
-                    is_mandatory_qco=meta.get("is_mandatory_qco", False)
-                )
-            else:
-                metadata_info = None
-        except RuntimeError as e:
-            logger.warning("Could not fetch metadata for standard %s: %s", standard_id, e)
-            metadata_info = None
-            
+        # References from batch result
+        refs = all_refs.get(standard_id, [])
+        reference_items = [
+            ReferenceItem(
+                referenced_id=r["referenced_id"],
+                title=r.get("referenced_title"),
+                relationship_type=r.get("relationship_type")
+            ) for r in refs
+        ]
+
+        # Metadata from batch result
+        meta = all_meta.get(standard_id)
+        metadata_info = None
+        if meta:
+            metadata_info = MetadataInfo(
+                latest_version=meta.get("latest_version"),
+                amendment_date=meta.get("amendment_date"),
+                is_mandatory_qco=meta.get("is_mandatory_qco", False)
+            )
+
         recommendations.append(
             StandardRecommendation(
                 standard_id=standard_id,
@@ -58,10 +70,9 @@ def recommend_standards(request: RecommendRequest):
                 metadata=metadata_info
             )
         )
-        
+
     return RecommendResponse(
         query=request.query,
         recommendations=recommendations,
         total_results=len(recommendations)
     )
-
