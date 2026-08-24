@@ -1,9 +1,11 @@
+import logging
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import RecommendRequest, RecommendResponse, StandardRecommendation, ReferenceItem, MetadataInfo
 from app.services.retrieval import search
 from app.services.reference_expand import get_references
 from app.services.metadata import get_metadata
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post("/recommend", response_model=RecommendResponse)
@@ -11,6 +13,7 @@ def recommend_standards(request: RecommendRequest):
     try:
         search_results = search(request.query, request.top_k)
     except RuntimeError as e:
+        logger.error("Search failure for query '%s': %s", request.query, e)
         raise HTTPException(status_code=500, detail=str(e))
     
     recommendations = []
@@ -29,7 +32,7 @@ def recommend_standards(request: RecommendRequest):
                 ) for r in refs
             ]
         except RuntimeError as e:
-            print(f"Warning: {e}")
+            logger.warning("Could not expand references for standard %s: %s", standard_id, e)
             reference_items = []
 
         try:
@@ -43,7 +46,7 @@ def recommend_standards(request: RecommendRequest):
             else:
                 metadata_info = None
         except RuntimeError as e:
-            print(f"Warning: {e}")
+            logger.warning("Could not fetch metadata for standard %s: %s", standard_id, e)
             metadata_info = None
             
         recommendations.append(
@@ -61,3 +64,4 @@ def recommend_standards(request: RecommendRequest):
         recommendations=recommendations,
         total_results=len(recommendations)
     )
+
