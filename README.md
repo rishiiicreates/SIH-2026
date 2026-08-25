@@ -281,7 +281,25 @@ npm install
 npm run dev
 ```
 
-Open your browser at: 🌐 **[http://localhost:3000](http://localhost:3000)** *(or port `3001` if `3000` is in use)*.
+Open your browser at: 🌐 **[http://localhost:3000](http://localhost:3000)**.
+
+---
+
+### 🐳 Alternative: 1-Command Docker Setup
+
+If you prefer running everything in Docker containers without manually setting up Python or Node.js environments:
+
+1. Ensure [Docker Desktop](https://www.docker.com/products/docker-desktop/) is installed and running.
+2. Ensure your `backend/.env` file is configured with your Supabase and Gemini keys.
+3. In the root directory, run:
+
+```bash
+docker compose up --build
+```
+
+* **Frontend Dashboard:** [http://localhost:3000](http://localhost:3000)
+* **Backend API & Swagger Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+* **Stop Containers:** `docker compose down`
 
 ---
 
