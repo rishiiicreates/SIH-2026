@@ -1,8 +1,3 @@
--- ============================================================
--- BIS STANDARDS ENGINE: COMPLETE ONE-CLICK SQL SEED SCRIPT
--- Smart India Hackathon 2026 · PS 26108
--- Run this entire script in Supabase SQL Editor
--- ============================================================
 
 -- 1. Enable Vector Extension
 CREATE EXTENSION IF NOT EXISTS vector;
