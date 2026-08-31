@@ -3,7 +3,9 @@
 > **Smart India Hackathon (SIH 2026)** · **Problem Statement ID:** 26108  
 > **Ministry:** Ministry of Consumer Affairs, Food & Public Distribution — Department of Consumer Affairs (DoCA) / Bureau of Indian Standards (BIS)  
 > **Theme:** Smart Automation / Public Procurement  
-> **Repository:** `github.com/rishiiicreates/SIH-2026`
+> **Repository:** `github.com/rishiiicreates/SIH-2026`  
+> **Live Frontend:** [https://bis-standards-engine.vercel.app](https://bis-standards-engine.vercel.app)  
+> **Live API (Railway):** [https://shiro-production-c5a5.up.railway.app](https://shiro-production-c5a5.up.railway.app)
 
 ---
 
