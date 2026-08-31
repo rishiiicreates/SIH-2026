@@ -56,19 +56,19 @@ export default function SearchBar({ onSearch, isLoading }: SearchBarProps) {
       <div className="flex flex-wrap items-center gap-2 pt-1 text-sm text-gray-500">
         <span className="font-medium text-gray-600">Try searching:</span>
         {[
-          '5 HP submersible agricultural pump',
-          'PVC insulated copper cable for building wiring',
-          'Fe 500D TMT reinforcement steel bars',
-          '36W commercial LED panel luminaire',
+          { label: '5 HP submersible pump, stainless s...', query: '5 HP submersible pump, stainless steel shaft for agricultural borewell' },
+          { label: 'खेती के लिए सबमर्सिबल पंप', query: 'खेती के लिए 5 एचपी सबमर्सिबल पंप' },
+          { label: 'PVC insulated copper cable...', query: 'PVC insulated copper cable for electrical wiring in residential buildings' },
+          { label: 'Fe 500D TMT steel bars...', query: 'Fe 500D TMT reinforcement steel bars for foundation RCC columns' },
         ].map((example) => (
           <button
-            key={example}
+            key={example.label}
             type="button"
-            onClick={() => handleChipClick(example)}
+            onClick={() => handleChipClick(example.query)}
             disabled={isLoading}
-            className="px-3 py-1 bg-white hover:bg-blue-50 text-bis-blue hover:text-blue-900 border border-gray-200 hover:border-bis-blue/40 rounded-full text-xs font-medium transition-colors shadow-sm disabled:opacity-50"
+            className="px-3 py-1 bg-white hover:bg-blue-50 text-bis-blue hover:text-blue-900 border border-gray-200 hover:border-bis-blue/40 rounded-full text-xs font-medium transition-colors shadow-sm disabled:opacity-50 truncate max-w-[220px] cursor-pointer"
           >
-            {example}
+            {example.label}
           </button>
         ))}
       </div>

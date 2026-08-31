@@ -46,7 +46,7 @@ export default function ReferenceList({ references }: ReferenceListProps) {
     <div className="mt-4 border border-gray-100 rounded-lg overflow-hidden bg-gray-50/50">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-3 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+        className="w-full flex items-center justify-between p-3 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-2">
           <FileText size={16} className="text-gray-500" />
