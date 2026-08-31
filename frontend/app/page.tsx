@@ -37,15 +37,12 @@ export default function Home() {
       {/* Header */}
       <header className="bg-bis-blue text-white py-12 px-4 shadow-md relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-2 bg-bis-saffron"></div>
-        <div className="max-w-5xl mx-auto text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold backdrop-blur-sm border border-white/15 mb-1">
-            <span>Bureau of Indian Standards · DoCA</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight">
-            BIS Standards Recommendation Engine
+        <div className="max-w-5xl mx-auto text-center space-y-2">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight">
+            Manak
           </h1>
           <p className="text-blue-100 text-base md:text-lg font-medium tracking-wide">
-            AI-Powered Procurement Specifications · PS 26108 · Smart India Hackathon 2026
+            BIS Standards Recommendation Engine
           </p>
         </div>
       </header>

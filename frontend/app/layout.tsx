@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'BIS Standards Recommendation Engine',
-  description: 'AI-Powered Procurement Specifications Recommendation Engine for Smart India Hackathon 2026',
+  title: 'Manak - BIS Standards Recommendation Engine',
+  description: 'AI-Powered Indian Standards Recommendation Engine for Procurement & Tenders',
 };
 
 export default function RootLayout({
