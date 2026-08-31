@@ -14,7 +14,7 @@ create table if not exists standards (
 
 
 create table if not exists standard_references (
-  standard_id text references standards(standard_id),
+  standard_id text references standards(standard_id) on delete cascade,
   referenced_id text,
   referenced_title text,
   relationship_type text,

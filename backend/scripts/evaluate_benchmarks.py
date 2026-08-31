@@ -12,6 +12,16 @@ from app.services.metadata import get_metadata
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
 EVAL_FILE = os.environ.get("EVAL_DATA_FILE", os.path.join(BASE_DIR, "data", "sample_procurement_tenders_eval.json"))
 
+import re
+
+def normalize_standard_id(sid: str) -> str:
+    """Normalize standard ID by stripping trailing 4-digit revision year (e.g., 'IS 694:2010' -> 'IS 694')."""
+    cleaned = sid.strip()
+    # Strip trailing 4-digit year following a colon (e.g. ':2010' or ':1988')
+    cleaned = re.sub(r':\d{4}$', '', cleaned)
+    # Strip any extra whitespace
+    return re.sub(r'\s+', ' ', cleaned).upper()
+
 def evaluate():
     if not os.path.exists(EVAL_FILE):
         print(f"Error: Eval file not found at {EVAL_FILE}")
@@ -19,6 +29,10 @@ def evaluate():
 
     with open(EVAL_FILE, "r") as f:
         tenders = json.load(f)
+
+    if not tenders:
+        print("No tenders to evaluate.")
+        return
 
     print(f"\n{'='*75}")
     print(f"📊 BIS STANDARDS RECOMMENDATION ENGINE — BENCHMARK EVALUATION HARNESS")
@@ -50,10 +64,13 @@ def evaluate():
 
         retrieved_ids = [r["standard_id"] for r in results]
 
-        # Calculate rank of first ground truth match
+        # Calculate rank of first ground truth match using accurate normalization
         first_match_rank = None
+        norm_gt_primaries = [normalize_standard_id(gt_p) for gt_p in gt_primaries]
+
         for rank, rid in enumerate(retrieved_ids, 1):
-            if any(gt_p.split(":")[0].strip() == rid.split(":")[0].strip() for gt_p in gt_primaries):
+            norm_rid = normalize_standard_id(rid)
+            if any(norm_gt == norm_rid for norm_gt in norm_gt_primaries):
                 if first_match_rank is None:
                     first_match_rank = rank
 
@@ -67,10 +84,10 @@ def evaluate():
             reciprocal_ranks.append(0.0)
 
         # Top-3 Recall Check (how many ground truth primaries retrieved in top 3)
-        top3_retrieved = retrieved_ids[:3]
+        top3_norm_retrieved = [normalize_standard_id(rid) for rid in retrieved_ids[:3]]
         matches_in_top3 = sum(
-            1 for gt_p in gt_primaries
-            if any(gt_p.split(":")[0].strip() == rid.split(":")[0].strip() for rid in top3_retrieved)
+            1 for norm_gt in norm_gt_primaries
+            if any(norm_gt == norm_r for norm_r in top3_norm_retrieved)
         )
         top3_hits += matches_in_top3
 
@@ -92,9 +109,9 @@ def evaluate():
         print(f"   QCO Mandatory Check:    {'✓ MATCH (' + str(gt_qco) + ')' if top1_qco_flag == gt_qco else '✗ MISMATCH'}\n")
 
     mrr = sum(reciprocal_ranks) / len(reciprocal_ranks) if reciprocal_ranks else 0.0
-    top1_acc = (top1_hits / len(tenders)) * 100
-    top3_recall = (top3_hits / total_ground_truth_primaries) * 100
-    qco_acc = (qco_correct_count / len(tenders)) * 100
+    top1_acc = (top1_hits / len(tenders)) * 100 if tenders else 0.0
+    top3_recall = (top3_hits / total_ground_truth_primaries * 100) if total_ground_truth_primaries > 0 else 0.0
+    qco_acc = (qco_correct_count / len(tenders)) * 100 if tenders else 0.0
     avg_latency = sum(latencies) / len(latencies) if latencies else 0.0
 
     print(f"{'='*75}")

@@ -9,6 +9,9 @@ from app.services.metadata import get_metadata_batch
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# Reusable thread pool for parallel batch DB queries
+_batch_executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="rec_batch")
+
 @router.post("/recommend", response_model=RecommendResponse)
 def recommend_standards(request: RecommendRequest):
     try:
@@ -27,12 +30,11 @@ def recommend_standards(request: RecommendRequest):
     # Collect all standard IDs from search results
     standard_ids = [res["standard_id"] for res in search_results]
 
-    # Batch fetch: 2 DB queries instead of 10 sequential ones
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        refs_future = executor.submit(get_references_batch, standard_ids)
-        meta_future = executor.submit(get_metadata_batch, standard_ids)
-        all_refs = refs_future.result()
-        all_meta = meta_future.result()
+    # Batch fetch concurrently using shared executor
+    refs_future = _batch_executor.submit(get_references_batch, standard_ids)
+    meta_future = _batch_executor.submit(get_metadata_batch, standard_ids)
+    all_refs = refs_future.result()
+    all_meta = meta_future.result()
 
     # Assemble response using pre-fetched data
     recommendations = []

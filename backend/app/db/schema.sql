@@ -14,7 +14,7 @@ create table if not exists standards (
 
 -- Create standard_references join table for normative & allied lookups
 create table if not exists standard_references (
-  standard_id text references standards(standard_id),
+  standard_id text references standards(standard_id) on delete cascade,
   referenced_id text,
   referenced_title text,
   relationship_type text,

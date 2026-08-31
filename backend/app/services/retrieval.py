@@ -1,6 +1,8 @@
+import json
 import logging
 import math
-from functools import lru_cache
+import threading
+from collections import OrderedDict
 from google import genai
 from google.genai.errors import APIError
 from postgrest.exceptions import APIError as PostgrestAPIError
@@ -21,34 +23,37 @@ def _get_genai_client():
         _genai_client = genai.Client(api_key=settings.GEMINI_API_KEY)
     return _genai_client
 
-# LRU cache: same query text → same embedding vector (deterministic model)
-_embedding_cache: dict[str, list[float]] = {}
+# Thread-safe LRU cache: same query text → same embedding vector (deterministic model)
+_embedding_cache: OrderedDict[str, list[float]] = OrderedDict()
+_cache_lock = threading.Lock()
 MAX_CACHE_SIZE = 200
 
 def embed_text(text: str, max_retries: int = 3) -> list[float]:
     """Embed text with Gemini, using an in-memory cache for repeated queries."""
-    # Check cache first
     cache_key = text.strip().lower()
-    if cache_key in _embedding_cache:
-        logger.debug("Embedding cache hit for: %s", text[:50])
-        return _embedding_cache[cache_key]
+    with _cache_lock:
+        if cache_key in _embedding_cache:
+            _embedding_cache.move_to_end(cache_key)
+            logger.debug("Embedding cache hit for: %s", text[:50])
+            return _embedding_cache[cache_key]
 
     last_err = None
     for attempt in range(max_retries):
         try:
             client = _get_genai_client()
+            model_name = settings.EMBEDDING_MODEL if settings.EMBEDDING_MODEL.startswith("models/") else f"models/{settings.EMBEDDING_MODEL}"
             response = client.models.embed_content(
-                model=settings.EMBEDDING_MODEL,
+                model=model_name,
                 contents=text,
                 config={"output_dimensionality": settings.EMBEDDING_DIMENSION},
             )
             embedding = response.embeddings[0].values
 
             # Store in cache (evict oldest if full)
-            if len(_embedding_cache) >= MAX_CACHE_SIZE:
-                oldest_key = next(iter(_embedding_cache))
-                del _embedding_cache[oldest_key]
-            _embedding_cache[cache_key] = embedding
+            with _cache_lock:
+                if len(_embedding_cache) >= MAX_CACHE_SIZE:
+                    _embedding_cache.popitem(last=False)
+                _embedding_cache[cache_key] = embedding
 
             return embedding
         except Exception as e:
@@ -95,9 +100,15 @@ def search(query: str, top_k: int = settings.TOP_K_DEFAULT) -> list[dict]:
         all_stds = client.table("standards").select("standard_id, title, embedding").execute()
         results = []
         for row in all_stds.data:
-            if not row.get("embedding"):
+            emb = row.get("embedding")
+            if not emb:
                 continue
-            sim = _cosine_similarity(query_embedding, row["embedding"])
+            if isinstance(emb, str):
+                try:
+                    emb = json.loads(emb)
+                except Exception:
+                    continue
+            sim = _cosine_similarity(query_embedding, emb)
             results.append({
                 "standard_id": row["standard_id"],
                 "title": row["title"],
@@ -118,4 +129,13 @@ def warmup():
         embed_text("warmup query")
         logger.info("Warmup complete — Gemini client ready")
     except Exception as e:
-        logger.warning("Warmup failed (non-fatal): %s", e)
+        logger.warning("Gemini warmup failed (non-fatal): %s", e)
+
+    try:
+        logger.info("Warming up Supabase client connection...")
+        client = get_supabase()
+        if client:
+            client.table("standards").select("standard_id").limit(1).execute()
+            logger.info("Supabase warmup complete")
+    except Exception as e:
+        logger.warning("Supabase warmup failed (non-fatal): %s", e)

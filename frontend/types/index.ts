@@ -1,12 +1,12 @@
 export interface Reference {
   referenced_id: string;
-  title: string;
-  relationship_type: string;
+  title?: string | null;
+  relationship_type?: string | null;
 }
 
 export interface StandardMetadata {
-  latest_version?: string;
-  amendment_date?: string;
+  latest_version?: string | null;
+  amendment_date?: string | null;
   is_mandatory_qco?: boolean;
 }
 
@@ -15,7 +15,7 @@ export interface Recommendation {
   title: string;
   similarity: number;
   references: Reference[];
-  metadata: StandardMetadata;
+  metadata?: StandardMetadata | null;
 }
 
 export interface RecommendResponse {

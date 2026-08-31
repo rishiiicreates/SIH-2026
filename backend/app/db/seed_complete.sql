@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS standards (
 
 -- 3. Create Standard References Table
 CREATE TABLE IF NOT EXISTS standard_references (
-  standard_id text REFERENCES standards(standard_id),
+  standard_id text REFERENCES standards(standard_id) ON DELETE CASCADE,
   referenced_id text,
   referenced_title text,
   relationship_type text,

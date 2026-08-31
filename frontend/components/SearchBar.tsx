@@ -66,7 +66,7 @@ export default function SearchBar({ onSearch, isLoading }: SearchBarProps) {
             type="button"
             onClick={() => handleChipClick(example)}
             disabled={isLoading}
-            className="px-3 py-1 bg-white hover:bg-blue-50 text-bis-blue hover:text-blue-900 border border-gray-200 hover:border-bis-blue/40 rounded-full text-xs font-medium transition-colors shadow-xs disabled:opacity-50"
+            className="px-3 py-1 bg-white hover:bg-blue-50 text-bis-blue hover:text-blue-900 border border-gray-200 hover:border-bis-blue/40 rounded-full text-xs font-medium transition-colors shadow-sm disabled:opacity-50"
           >
             {example}
           </button>
